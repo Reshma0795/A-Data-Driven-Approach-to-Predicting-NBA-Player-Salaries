@@ -1,0 +1,831 @@
+---
+title: "Guided Team Project"
+author:
+  - Aniket Udaykumar
+  - Niranjana Anand Unnithan
+  - Reshma Vijay Jawale
+  - Varsha Singh
+  - Vidhu Verma
+date: 'March 7th, 2022'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: 
+    df_print: kable
+    highlight: tango
+    fig_height: 4
+    fig_caption: yes
+    latex_engine: lualatex
+subtitle: IS5126 Hands-on with Applied Analytics - Team 17
+linkcolor: MidnightBlue
+header-includes: \usepackage{xcolor}
+---
+
+## Preparation
+
+```{r load-libraries, echo=TRUE, message=FALSE, warning=FALSE}
+# load required packages
+library(dplyr)
+library(rcompanion)
+library(readxl)
+library(tidyr)
+library(ggplot2) 
+library(dplyr) 
+library(RColorBrewer)
+library(knitr)
+library(png)
+
+library(animation)
+library(gifski)
+library(table1)
+library(gtsummary)
+library(gt)
+library(corrplot)
+library(xtable)
+library(car)
+library(DT)
+
+library(AER)    # applied econometrics with R
+library(plm)    # panel-lm
+library(stargazer)      # popular package for regression table-making
+library(lattice)
+
+library(GGally)
+library(standardize)
+library(QuantPsyc)
+
+library(tidyverse)
+library(factoextra)
+
+library("lmtest")
+library("sandwich")
+
+```
+
+# Part C: Data Analytics
+
+-   Dataset required: `seasons_unbalanced` , `seasons_balanced`
+
+
+```{r read-dataset, echo=TRUE}
+#read unbalanced dataset 
+seasons_unbalanced = read.csv(file = 'season_unbalanced_per_game_data.csv', header= TRUE)
+#read balanced dataset 
+seasons_balanced = read.csv(file = 'season_balanced_panel.csv', header= TRUE)
+
+```
+
+### 1. Clustering. 
+
+```{r cluster-attributes, echo=TRUE}
+player_data <- seasons_unbalanced
+
+kmeans_attributes <- player_data[, c("Player_Season_Salary")]
+
+```
+
+```{r cluster-kmeans-elbow, echo=TRUE}
+# function to compute total within-cluster sum of square 
+wss <- function(k) {
+  kmeans(kmeans_attributes, k, nstart = 10 )$tot.withinss
+}
+
+# Compute and plot wss for k = 1 to k = 15
+k.values <- 1:15
+
+# extract wss for 2-15 clusters
+wss_values <- map_dbl(k.values, wss)
+
+plot(k.values, wss_values,
+       type="b", pch = 19, frame = FALSE, 
+       xlab="Number of clusters K",
+       ylab="Total within-clusters sum of squares")
+
+```
+
+```{r kmeans-part-a, echo=TRUE}
+set.seed(123)
+km_cluster1 = kmeans(kmeans_attributes, centers = 4, nstart = 10)
+
+player_data$cluster = km_cluster1$cluster
+
+player_data_numeric <- player_data[, c("Mins_Played_per_game", "eFG.","FT_percent", "Total_Rebounds_per_game", "Assists_per_game", "Steals_per_game", "Blocks_per_game", "Turnovers_per_game", "Points_per_game", "Personal_Fouls_per_game", "PER", "TS.", "BPM", "WS", "Player_Season_Salary", "cluster")]
+
+cluster1 = player_data_numeric[player_data$cluster == 1, ] 
+cluster2 = player_data_numeric[player_data$cluster == 2, ] 
+cluster3 = player_data_numeric[player_data$cluster == 3, ] 
+cluster4 = player_data_numeric[player_data$cluster == 4, ]
+
+```
+
+```{r kmeans-analysis, echo=TRUE}
+
+print("cluster1")
+round(colMeans(cluster1),1)
+
+print("cluster2")
+round(colMeans(cluster2),1)
+
+print("cluster3")
+round(colMeans(cluster3),1)
+
+print("cluster4")
+round(colMeans(cluster4),1)
+
+```
+
+Which players are similar? (10 points)
+
+a. Apply "k-means" algorithm.
+
+`Answer a`
+
+We are running kmeans clustering based on the player_season_salary attribute. We choose to run only with the *player_season_salary* attribute as we don't want the effect of other attributes to influence the clusters being formed. We want to interpret those attributes based on the clusters formed.
+
+We apply the kmeans algorithm using the using the following command:
+
+kmeans(kmeans_attributes, centers = 4, nstart = 15)
+
+Where centers is the number of clusters
+nstart signifies the number of random initializations of the centroids
+
+The size of the clusters are the following: 1176 3450  219  686
+
+b. With k-mean clustering, what attributes about the players do you use, as to justify the players' salaries?
+
+`Answer b`
+
+We have chosen the following attributes to analyse for each cluster:
+
+Mins_Played_per_game, eFG.,FT_percent, Total_Rebounds_per_game, Assists_per_game, Steals_per_game, Blocks_per_game, Turnovers_per_game, Points_per_game, Personal_Fouls_per_game, PER, TS., BPM, WS, Player_Season_Salary
+
+We calculate the means for these numeric attributes for each cluster.
+
+Based on the mean values we can see that the players with the highest salaries on average are the ones who play longer per game and have better overall performance in each category.
+For example, key metrics like points_per_game, Assists_per_game, Total_Rebounds_per_game, Steals_per_game, Blocks_per_game which are the most integral performance attributes of a basketball player. We can see that for players with higher salaries the averages for these performance attributes are also higher.
+
+We can also see in the advanced statistics like PER (Player efficiency rating), TS% (True shooting percentage), WS (Win shares) and BPM (Box plus/minus) are higher for players with higher salaries. 
+
+The means clearly show that players who perform better and contribute more in making their teams win are paid better.
+
+c. How many clusters k do you choose and why?
+
+`Answer c`
+
+We plot 'within-cluster sum of square distance' as a function of number of clusters. To determine the number of clusters we have to find the elbow in this plot. Looking at the graph we can select either k=4 or k=3, we select k as 4 as the number of clusters. With k=4 the variances between the salaries in each cluster was lower, hence we slected k=4.
+
+
+d. Do you get different results with different (random) initialization of centers? Can you find parameters, i.e. k and attributes, that yield stable clustering?
+
+`Answer d`
+
+```{r kmeans-d, echo=TRUE}
+
+print("When nstart=1")
+set.seed(23)
+km_test1 = kmeans(kmeans_attributes, centers = 4, nstart = 1)
+
+km_test1$size
+
+
+set.seed(55)
+km_test2 = kmeans(kmeans_attributes, centers = 4, nstart = 1)
+km_test2$size
+
+
+print("When nstart=10")
+
+set.seed(23)
+km_test3 = kmeans(kmeans_attributes, centers = 4, nstart = 10)
+km_test3$size
+
+
+set.seed(55)
+km_test4 = kmeans(kmeans_attributes, centers = 4, nstart = 10)
+km_test4$size
+```
+
+Yes, we get different result with different initialization of centers.
+
+Kmeans clustering algorithm depends heavily on how the centroids are initialization. An example of poor initialization is when when all the N points are close to one of the centroid, in this case the worse case could be K-1 clusters would be empty cluster.
+
+We use nstart to give the number of random initialization kmeans should do. With nstart =10, the algorithm does 10 initializations and chooses the best one with the lowest within-sum-of-cluster sum of squared distances.
+Also, the default value for the number of iterations (iter.max) is 10. So the algorithm would run till it finds no more changes in the centroid or 10 times.
+
+nstart and iter.max make sure that the result of the cluster is stable and is not entirely dependent on the initialization of the centroid
+
+To prove this, in the code above, when nstart=1 changing the seed value will choose a set of random initial centroids and will give us different cluster sizes in the 2 cases.
+
+When the value of nstart is increased to 10 the same cluster sizes are generated.
+
+The parameters for which are getting stable clustering are:
+
+k=4, iter.max=10, nstart=10
+
+e. How do you interpret the clusters to your boss? What do each cluster mean (in terms of the attributes)?
+
+`Answer e`
+
+These 4 clusters are grouping of players based on their salaries. With the centers being the average salary of each group.
+
+As mentioned in question-b they allow us to analyze performance attributes and statistics of players once we have the grouping of players based on salary. We can show that better performing players are also the ones who get higher salaries on average.
+
+By grouping the players based on salary we can get an insight into traits which are similar between players. 
+
+
+### 2. Linear Regression
+
+In the section, we perform linear regression on the NBA dataset to identify the factors that predict a player’s salary in the most current season. 
+
+#### Select the records corresponding to the current active season 2020-21
+
+```{r linear_data1, echo=TRUE}
+# Select team stats for the current season 
+seasons_stats_active <- seasons_unbalanced  %>%
+                        filter(Season_Year == '2020-21')
+
+head(seasons_stats_active)
+```
+
+#### Removal of Outliers
+There are 82 games in the NBA and scoring 25 points is realistic even for benched players. Hence, we remove the entries for which the points are less than 25.
+
+```{r linear_data2, echo=TRUE}
+# Outlier removal
+seasons_stats_active <- seasons_stats_active %>%
+                        filter(Points > 25)
+
+```
+
+#### Analyse the columns in the dataset
+```{r linear_data3, echo=TRUE}
+# Rename variables for ease of use
+seasons_stats_active <- seasons_stats_active %>%
+  rename(Salary = Player_Season_Salary, MPG = Mins_Played_per_game, TRPG = Total_Rebounds_per_game, APG = Assists_per_game, SPG=Steals_per_game, BPG = Blocks_per_game, TPG = Turnovers_per_game, PFPG = Personal_Fouls_per_game, PPG = Points_per_game, FGP = FG_percent, X3P= X3P_percent, X2P = X2P_percent,EFG = eFG., FTP = FT_percent, EXP=Experience )
+
+# Display Column names
+colnames(seasons_stats_active) 
+```
+
+
+#### Corelation matrix
+
+Correlation Matrix between dependent and independent variables in the data frame
+
+```{r linear_cor1, echo=TRUE}
+
+### Corelation plot 1
+corrplot(cor(seasons_stats_active %>%
+               dplyr::select(Salary, Rank,EXP, Age,Height, Weight,Games, FGP, X3P, X2P, EFG, FTP, MPG,TRPG, APG, SPG, BPG, TPG, PFPG, PPG,PER, TS.,BPM, WS ),
+use = "complete.obs"),
+method = "circle",type = "upper")
+
+```
+
+Identified that the following variables have positive corelation with the dependent variable Player Season Salary
+
+1) Mins_Played_per_game (MPG)
+
+2) Total_Rebounds_per_game (TBPR)
+
+3) Assists_per_game (APG)
+
+4) Steals_per_game (SPG)
+
+5) Turnovers_per_game (TPG)
+
+6) Points_per_game (PPG)
+
+7) Age
+
+8) Experience (EXP)
+
+9) Player_Efficiency_Rating (PER)
+
+10) Box Plus/Minus (BPM)
+
+11) Win_Shares (WS)
+
+Examining the highly correlated variables in detail
+
+```{r linear_cor2, echo=TRUE}
+
+seasons_stats_active_cor <- 
+  seasons_stats_active %>% 
+  dplyr::select(Salary, MPG, TRPG, APG, SPG, TPG, PPG, PER, Age, EXP, BPM, WS)
+ggpairs(seasons_stats_active_cor, upper = list(continuous = wrap("cor", size = 1)))
+
+cor(seasons_stats_active_cor)[,"Salary"]
+
+```
+
+It can be observed that the variable Points per Game has the highest correlation with the dependent variable Player Season Salary
+
+### Plot with Salary vs PPG
+
+```{r linear_plot, echo=TRUE}
+
+### Player Season Salary vs PPG
+seasons_stats_active %>% 
+  ggplot(aes(x = Salary, y = PPG)) + 
+  geom_point() + 
+  geom_smooth(method = "lm") 
+
+```
+### Linear Regression
+
+```{r linear_model, echo=TRUE}
+
+### Linear Regression
+# stats_salary_regression <-
+#   seasons_stats_active %>% select(Salary, MPG, TRPG, APG, SPG, TPG, PPG)
+
+# stats_salary_regression <-
+#   seasons_stats_active %>% select(Salary, Age, EXP, FGP, X3P, X2P, EFG, FTP, MPG,TRPG, APG, SPG, BPG, TPG, PFPG, PPG, PER, BPM, WS)
+
+# stats_salary_regression <-
+#   seasons_stats_active %>% select(Salary, Age, EXP, MPG,TRPG, APG, SPG, BPG, TPG, PFPG, PPG, PER, BPM, WS)
+
+# stats_salary_regression <-
+#   seasons_stats_active %>% select(Salary,  EXP, MPG,TRPG, APG, SPG, BPG, TPG, PFPG, PPG, PER, BPM, WS)
+
+stats_salary_regression <-
+  seasons_stats_active %>% dplyr::select(Salary,  EXP, MPG,TRPG, APG, SPG, BPG, TPG, PFPG, PPG, PER)
+
+linear_model = lm(Salary~., data=stats_salary_regression)
+
+summary(linear_model)
+
+```
+### Standardized betas 
+
+Since the beta vales are high, we can take standardized beta values
+
+```{r linear_std_beta, echo=TRUE}
+lm.beta(linear_model)
+```
+
+### Residual plots
+
+
+```{r linear_rp, echo=TRUE}
+linear_model_resid = resid(linear_model)
+plot(stats_salary_regression$Salary, linear_model_resid, 
+     ylab="Residuals", xlab="Salary", 
+     main="NBA Player Salary") 
+abline(0, 0)                  
+```
+### Linear regression with standardized variables
+Since the Residual standard error is high, creating a linear regression model with standardized variables
+
+```{r linear_scale, echo=TRUE}
+
+
+stats_salary_regression$salary_scaled <- scale(stats_salary_regression$Salary)[, 1]
+
+stats_salary_regression$salary_scaled <- scale(stats_salary_regression$Salary)[, 1]
+
+stats_salary_regression$EXP_scaled <- scale(stats_salary_regression$EXP)[, 1]
+
+stats_salary_regression$MPG_scaled <- scale(stats_salary_regression$MPG)[, 1]
+
+stats_salary_regression$TRPG_scaled <- scale(stats_salary_regression$TRPG)[, 1]
+
+stats_salary_regression$APG_scaled <- scale(stats_salary_regression$APG)[, 1]
+
+stats_salary_regression$SPG_scaled <- scale(stats_salary_regression$SPG)[, 1]
+
+stats_salary_regression$BPG_scaled <- scale(stats_salary_regression$BPG)[, 1]
+
+stats_salary_regression$TPG_scaled <- scale(stats_salary_regression$TPG)[, 1]
+
+stats_salary_regression$PFPG_scaled <- scale(stats_salary_regression$PFPG)[, 1]
+
+stats_salary_regression$PPG_scaled <- scale(stats_salary_regression$PPG)[, 1]
+
+stats_salary_regression$PER_scaled <- scale(stats_salary_regression$PER)[, 1]
+
+stats_salary_regression_scale <-
+  stats_salary_regression %>% dplyr::select(salary_scaled,EXP_scaled, MPG_scaled,TRPG_scaled, APG_scaled, SPG_scaled, BPG_scaled, TPG_scaled, PFPG_scaled, PPG_scaled, PER_scaled)
+
+linear_model_scale = lm(salary_scaled~.,data=stats_salary_regression_scale)
+
+summary(linear_model_scale)
+
+```
+
+
+
+What factors predict a player's salary in the most current season? (10 points)
+
+a. Using salary as the dependent variable, what variables do you include as the independent variables?
+
+Mins_Played_per_game, TRPG = Total_Rebounds_per_game, APG = Assists_per_game, SPG=Steals_per_game, BPG = Blocks_per_game, TPG = Turnovers_per_game, PFPG = Personal_Fouls_per_game, PPG = Points_per_game, EXP=Experience, PER=Player Efficiency Rating 
+
+b. Why do you choose the model you specified? Do you have any theory or rely on your
+observations?
+
+* It can be observed that the selected independent variables show high positive correlation with the dependent variable Player_Season_Salary
+* From experiments conducted, the above combination of variables were giving the maximum R2 value and high F score for the linear regression model and all of them were statistically significant
+* Intuitively, the main determinant of a player's salary will be the performance of the player. The variables that we have selected mainly represent the performance statistics of the player.
+
+
+c. How do you interpret the results, particularly your key variable of interest?
+
+* The model gives an R^2 value of 0.6632 and F statistic score of 85.25.
+* We have used standardised beta values and p values to interpret the key variables of interest .
+* From the p values, it can be observed that all the independent variables in the model are statistically significant as their respective p values are less than 1% (0.01)
+* High value of F ( 85.25 ) accompanied by a small value of p less than 1% indicates that the null hypothesis is rejected. Hence, we can conclude that there is a relationship between the Player Salary and independent variables.
+* Although all the independent variables have an influence on the outcome variable, the variables Points per game (PPG), Assists Per Game (APG) and Experience (EXP) have higher standardised beta values. This indicated that they have higher positive correlation with Player Salary. 
+
+
+d. Which predictors are statistically significant?
+
+All the predictions are statistically significant. The predictors used in the model are Mins_Played_per_game, TRPG = Total_Rebounds_per_game, APG = Assists_per_game, SPG=Steals_per_game, BPG = Blocks_per_game, TPG = Turnovers_per_game, PFPG = Personal_Fouls_per_game, PPG = Points_per_game, EXP=Experience, PER=Player Efficiency Rating )
+
+e. If you are the team coach, what do you tell players from your analysis? For instance,
+each  goal contributes to your salary $X amount, so everyone should shoot as often?
+How does your analysis contribute to the team's overall revenue model?
+
+* We can determine the influence of each independent variable on the player salary from standardised beta values
+
+* It can be observed that Points Per Game (PPG) has the maximum influence on the Player Salary, followed by Assists Per Game (APG) and Experience (EXP) of the player
+
+* Following are the deductions that can be made by the coach
+
+    * Points per game has a positive correlation with the salary. Players should be encouraged to score more points
+    * In addition to scoring more points, coordination among the team members should also be improved by encouraging more assists
+With experience, the skill of the player improves resulting in higher salary
+
+From the analysis conducted, we have identified the factors that are important to the player salary. Higher salary is an indication of better performance. Hence, we get a consolidated wisdom about the performance of the players which helps to decide on the acquisition or retention of the players in the team and thus contributing to the overall revenue of the team.
+
+
+f. Do you believe the results?
+
+Though the linear regression model shows good adjusted R square value(0.65) and F-statistic (85.25) value we cannot believe it as linear regression model needs to meet the assumption criterias which are mean-zero error,uncorrelated error,linearity, homoskedasticity, normal error, no perfect multicollinearity. To believe the results these assumptions need to be validated which are covered in the next section.
+
+
+
+
+### 3. Model Justification
+
+Is the result valid? (10 points)
+
+a. Do you think your coeficients in regression are fair, overestimated or underestimated?
+(hint: check the conditional mean-zero error assumption from the residual plot and
+what is the implication of the residual average shown in the plot?)
+
+`Answer a`
+
+```{r just-residual, echo=TRUE}
+linear_model_resid = resid(linear_model)
+plot(stats_salary_regression$Salary, linear_model_resid, 
+     ylab="Residuals", xlab="Salary", 
+     main="NBA Player Salary") 
+abline(0, 0)                  
+```
+
+Looking at the residuals plot we can see in the residual plot the data points don’t symmetrically scatter around the reference line y=0.
+
+For the lower fitted values the reference line lies above majority of the points. The model appears to be overestimating the values. Whereas, for the higher fitted values the reference line is below majority of the points. For these points it is underestimating the values.
+
+Hence, we can say that the coefficients in the regression are not fair.
+
+b. Do you worry about heteroskedasticity? How can you detect and fix it if any?
+
+`Answer b`
+
+```{r model-heteroskedat, echo=TRUE}
+plot(linear_model, 3)
+
+est = summary(linear_model)
+est.robust = coeftest(linear_model, vcov = sandwich)
+
+
+coef.table.compare = cbind(est$coefficients[,1:2], est.robust[,1:2]) %>% round(4)
+colnames(coef.table.compare) = c("Est.","SE_OLS", "Est_White", "SE_White")
+print(coef.table.compare)
+```
+We use the scale-location plot to detect heteroskedacity. From the graph we can see the points are not equally spread around a horizontal line.
+
+The variance in residuals is not constant for the lower fitted values.Ideally, the trend should be a flat line, however in our case the line dips for lower fitted values. This suggests that there is a non-constant variance in the residual error. 
+
+To solve for heteroskedacity we can we can apply robust standard errors to fix the standard errors of the model. In the code we use white-huber robust standard error. This will give us standard-errors and their corresponding t-values which are robust to heteroskedacity.
+
+c. Do you worry about multicollinearity among your predictors? How can you quickly tell direction/strength of correlations among your variables?
+
+`Answer c`
+
+
+Yes, Since we have a large number fo attributes in the dataset there is a high chance for multicollinearity.
+
+We can use a correlation matrix, as used above in determining the important attributes to use based on their correlation to each other. It gives a score between -1 to 1 for each attribute with the other attributes. A score of 1  indicates a perfectly positive linear correlation while a score -1 indicates a perfectly negative linear correlation. 0 indicates no linear correlation between the attributes.
+
+
+d. If there is strong evidence for multicollinearity, which method do you choose to alleviate it and why?
+
+`Answer d`
+
+If there is strong evidence of multicollinearity, we can use Principal Component Analysis as a method to allieviate the issue. It is form of dimensionality reduction, which allows us to summarize information of high-dimensional data in a small set of principal predictors.
+
+
+```{r multi-pca, echo=TRUE}
+
+stats_salary_pca <-
+  seasons_stats_active %>% dplyr::select(Salary,  EXP, MPG,TRPG, APG, SPG, BPG, TPG, PFPG, PPG, PER)
+
+pca_salary = prcomp(formula = ~ . -Salary, data = stats_salary_pca, center = TRUE, scale = TRUE)
+
+summary(pca_salary)
+
+salary_new_pca = stats_salary_pca
+salary_new_pca$pc1 = pca_salary$x[,"PC1"]
+salary_new_pca$pc2 = pca_salary$x[,"PC2"]
+salary_new_pca$pc3 = pca_salary$x[,"PC3"]
+# run a linear regression of 'Salary ~ pc1 + pc2 + pc3'
+pcafit = lm(Salary ~ pc1 + pc2 + pc3, salary_new_pca)
+summary(pcafit)
+
+
+```
+
+Using prcomp on our dataset we can see that the first 3 PCs explain around 78%  variability. Hence, we can use them to run our linear regression model.
+
+The model shows similar R2 value as compared to the original model. However, our F-statistic score has significantly increased.
+
+### Panel Data Analysis 
+
+In this section, we are using panel analysis to understand what factors predict basketball player’s in the past 10 seasons i.e. from 2009-10 to 2020-21. 
+Panel  data  (also  known as longitudinal or  cross-sectional time-series  data)  is  a  dataset  in which the behavior of entities is observed across time.
+Panel data has two dimensions $(i, t)$ to keep track of "entity-time" level data points, denoted by
+$$(Y_{it}, \boldsymbol{X}_{it})\qquad \text{for } n= 1,2,\ldots, N \text{ and } t = 1,2,\ldots, T. $$
+
+
+Panel data can be balanced or unbalanced. In a balanced panel, all panel members have measurements in all periods. If a balanced panel contains N panel members and T periods, the number of observations is $n = N×T$. Whereas for an unbalanced panel, each panel member in a data set has different numbers of observations. Here, following strict inequality holds for the number of observations (n) in the dataset: $n < N×T$.
+Over the course of ten seasons, a lot of changes in basketball players' careers may have occurred, resulting in prospective metrics that might be used to estimate their salary. For example, a player may have transferred to another team or been sidelined for a few years due to injury, only to return in subsequent seasons. There could also be considerations relating to playing strategy, such as when a player switches from one playing position to another. In addition, when a player's experience grows over the seasons, his performance may improve, resulting in a raise in salary.
+
+Basketball players' total metrics can be divided into two categories  - 
+
+- Time invariant variables - Height, Weight, Experience(it is overall experience in our dataset)
+
+- Time invariant variables - Position, Age, Games, Mins_Played, Field_Goal,
+                             FG_attempts, FG_percent, 3_Point_FG, 3P_attempts, 3P_percent,2_Point_FG,
+                             2P_attempts, 2P_percent, Free_Throw, FT_attempts, FT_percent, Points,  
+                             Offensive_Rebounds, Defensive_Rebounds, Total_Rebounds, Assists, Steals,
+                            Blocks, Turnovers, Personal_Fouls Player_Career_Salary
+
+
+```{r panel_dataset, echo=TRUE}
+print(head(seasons_unbalanced))
+print(head(seasons_balanced))
+```
+
+
+
+```{r panel_dataset_select, echo=TRUE}
+#select the data of our interest from seasons_unbalanced
+seasons_unbalanced <- seasons_unbalanced %>% dplyr::select(Player, Year, Experience,Height,Weight, Position, Age, Games,Total_Rebounds_per_game, Assists_per_game, Steals_per_game,Blocks_per_game, Player_Season_Salary,Mins_Played_per_game,Turnovers_per_game,Personal_Fouls_per_game,Points_per_game,Field_Goal,X3_Point_FG,X2_Point_FG)
+
+#subset the data of our interest seasons_balanced
+seasons_balanced = seasons_balanced %>% dplyr::select(Player, Year, Experience,Height,Weight, Position, Age, Games,Total_Rebounds_per_game, Assists_per_game, Steals_per_game,Blocks_per_game, Player_Season_Salary,Mins_Played_per_game,Turnovers_per_game,Personal_Fouls_per_game,Points_per_game,Field_Goal,X3_Point_FG,X2_Point_FG)
+
+```
+
+
+#### Modelling
+
+In this section, we will explore 2 models, namely the Fixed Effect and the Random Effects Model on both types of dataset. For modeling we are going to use -
+
+- Entity variable -  player_id
+
+- Time variable  - Year
+
+- Dependent variable - Player_Season_Salary
+
+- Independent variable - Height, Weight, Age, Experience, Points, Games, X3_Point_FG, X2_Point_FG, Total_Rebounds_per_game,  Assists_per_game, Steals_per_game, Blocks_per_game, Turnovers_per_game, Personal_Fouls_per_game, Field_Goal
+
+#### Fixed-Effect (FE) Model
+
+The Fixed Effects regression model is used to estimate the effect of intrinsic characteristics of individuals in a panel data set. 
+The "fixed effect" population model has the following form:
+
+\begin{align}
+    Y_{it} = \boldsymbol{t}'\delta + \boldsymbol{X}_{it}'\beta + \alpha_i + u_{it}
+\end{align}
+
+We could apply either first-difference (FD) or time de-mean (FE) as data transformation to eliminate the fixed effect $\alpha_i$. We are not using the First Difference model here because in our case N(player_id) is large compared to T(years) and when N >> T then the Fixed Effect model  is preferred
+
+We will apply time de-mean (FE) as data transformation to eliminate the fixed effect. This model accounts for the time-invariant heterogeneity of individuals or time periods(one-way FE model) or both individuals and time periods (two-way FE model).
+
+#### Random Effect Model
+
+The random-effects model includes the possibility of between entity variations. It also assumes that this variation is random in nature or they are uncorrelated with variables under study.
+
+#### Hausman test
+
+The criteria to determine "fixed-effect" models (FE or FD) vs. random effect is : if the fixed-effect $\alpha_i$ (e.g., here player-level heterogeneity in our dataset) is correlated with covariates in any time period. We will use the Hausman test  to choose between a fixed-effects model or a random-effects model. The null hypothesis is that the preferred model is random effects; The alternate hypothesis is that the model has fixed effects.
+
+#### Panel Unbalanced Data Analysis 
+
+We have 5531 observations and 25 variables.  In this, there are 1331 unique players spread across 12 years from 2010 to 2021. In this case n < N×T(5531 < 1331×12). A few of the reasons(not all) why this dataset is unbalanced is because players might have retired during this 10 seasons, new players were introduced in mid of this season, players were drafted only in few seasons, Players were out of the game to injury or some personal issue. 
+
+```{r unbalanced_check, echo=TRUE}
+# check the dimension of data
+dim(seasons_unbalanced)
+
+#Let’s check how many years and player are in the dataset:
+length(unique(seasons_unbalanced$Year))
+
+length(unique(seasons_unbalanced$Player))
+
+#create a numeric Player ID variable because the plm package needs two numeric variables to constitute its ID-time index.
+seasons_unbalanced$player_id <- as.numeric(factor(seasons_unbalanced$Player))
+
+# check if the panel data is balanced or not using `plm` package function
+is.pbalanced(seasons_unbalanced)
+
+#As this is not the balanced data, find duplicate pair of season and player if any 
+seasons_unbalanced$unique_id <- paste(seasons_unbalanced$Player,seasons_unbalanced$Year) # concatenate to make unique ID
+seasons_unbalanced$duplicate = duplicated(seasons_unbalanced$unique_id) # generate the duplicate variable
+subset(seasons_unbalanced, duplicate=="TRUE")
+#No duplicate pair of season and player 
+
+```
+
+#### "Fixed Effect" Estimation:  Fixed-Effect (FE) on unbalanced dataset 
+
+```{r fe_panel_unbalanced, echo=TRUE}
+# use `plm` for fixed effect within estimation
+fixed_estimate = plm(Player_Season_Salary ~  Height + Weight   +
+                    Experience + Age + Points_per_game + Games  +  Mins_Played_per_game +
+                    X3_Point_FG + X2_Point_FG  + Total_Rebounds_per_game + Assists_per_game +
+                    Steals_per_game + Blocks_per_game + Turnovers_per_game + 
+                    Personal_Fouls_per_game + Field_Goal+ Year,
+         data = seasons_unbalanced,
+         index = c("player_id", "Year"), 
+         model = "within",effect = "twoways")
+summary(fixed_estimate)
+```
+
+As per the fixed effect model result, We see that points per game, total rebounds per game, and assists per game are all highly significant, with positive coefficient estimates of 693817.4, 546295.7, and  825533.6, respectively. We can also check that Personal Fouls per Game is highly significant and has a negative impact on a player's salary, indicating that players who violate the basketball game rule  are being negatively impacted in terms of salary. Steals have a negative indicator, which means that while it is an asset to be able to steal the ball from the opponent, it may not be reflected in the player's salary at the end of the game. In the NBA, it's possible that players who steal the ball a lot more are undervalued.
+
+
+##### coeftest
+`coeftest` after `plm` object in generally consider both heteroskedasticity and serial correlation with either `HC1` or method `arellano`
+
+```{r fe_coeftest, echo=TRUE}
+# `coeftest` after `plm` object considers both heteroskedasticity and serial correlation.
+coeftest(fixed_estimate, vcov. = vcovHC, type = "HC1")
+```
+
+#### Random effect test on unbalanced panel dataset
+
+```{r re_panel_unbalanced, echo=TRUE}
+# fit a random effect model with `plm`
+random_estimate = plm(Player_Season_Salary ~  Height + Weight + Age  +
+                    Experience + Points_per_game + Games  +  Mins_Played_per_game +
+                    X3_Point_FG + X2_Point_FG  + Total_Rebounds_per_game + Assists_per_game +
+                    Steals_per_game + Blocks_per_game + Turnovers_per_game + 
+                    Personal_Fouls_per_game + Field_Goal+ Year, 
+          data = seasons_unbalanced,
+          index = c("player_id", "Year"), 
+          model = "random")
+summary(random_estimate)
+
+```
+
+As per the random effect model result, We see that Height, age, Experience, Points_per_game, Total_Rebounds_per_game, and Assists_per_game are all highly significant and are positively correlated with salary. We can also check that Mins_Played_per_game and Personal_Fouls_per_game are highly significant and has a negative impact on a player's salary. 
+
+#### Random effect vs Fixed effect -  Hausman test 
+
+```{r compare_panel_unbalanced, echo=TRUE}
+# conduct the Hausman test on RE vs. FE with function `phtest` in `plm`
+phtest(fixed_estimate,random_estimate)
+```
+
+The test yielded a highly significant p-value, indicating that the fixed effect model is the best fit for this unbalanced panel dataset.  
+
+
+#### Panel Balanced Data Analysis 
+
+We have selected players who have played in all seasons to create the balanced dataset. We have 504 observations in which there are 42 unique players spread across 12 years from 2010 to 2021. In this case n = N×T (504=42×12). In our dataset, there are only 42 players who have played in all seasons. This is very less compared to 1331 players in our original dataset.
+
+
+```{r check_balanced, echo=TRUE}
+
+# check the dimension of data
+dim(seasons_balanced)
+
+#Let’s check how many years and player are in the dataset:
+length(unique(seasons_balanced$Year))
+length(unique(seasons_balanced$Player))
+
+#create a numeric Player ID variable because the plm package needs two numeric variables to constitute its ID-time index.
+seasons_balanced$player_id <- as.numeric(factor(seasons_balanced$Player))
+
+season_bal_panel<- pdata.frame(seasons_balanced, index = c("player_id", "Year"))
+
+# check if the panel data is balanced or not using `plm` package function
+is.pbalanced(season_bal_panel)
+#yes its a balanced dataset
+```
+
+
+#### "Fixed Effect" Estimation:  Fixed-Effect (FE) on balanced dataset 
+
+```{r fe_panel_balancded, echo=TRUE}
+
+# use `plm` for fixed effect estimation
+fe = plm(Player_Season_Salary ~  Height + Weight + Age  +
+                    Experience + Points_per_game + Games  +  Mins_Played_per_game +
+                    X3_Point_FG + X2_Point_FG  + Total_Rebounds_per_game + Assists_per_game +
+                    Steals_per_game + Blocks_per_game + Turnovers_per_game + 
+                    Personal_Fouls_per_game + Field_Goal+ Year,
+         data = season_bal_panel,
+         index = c("player_id", "Year"), model = "within")
+summary(fe)
+
+```
+
+Balanced dataset has not yielded similar result as unbalanced dataset because here we have considered very small subset of our original dataset. It also shows that Points_per_game and Total_Rebounds_per_game are highly signoficant and positively correlated with salary. 
+
+#### Random effect model on balanced dataset 
+
+```{r re_panel_balancded, echo=TRUE}
+
+# fit a random effect model with `plm`
+re = plm(Player_Season_Salary ~  Height + Weight + Age  +
+                    Experience + Points_per_game + Games  +  Mins_Played_per_game +
+                    X3_Point_FG + X2_Point_FG  + Total_Rebounds_per_game + Assists_per_game +
+                    Steals_per_game + Blocks_per_game + Turnovers_per_game + 
+                    Personal_Fouls_per_game + Field_Goal+ Year,
+         data = season_bal_panel, 
+         index = c("player_id", "Year"), 
+         model = "random")
+summary(re)
+```
+
+Here also we see that Points_per_game, Total_Rebounds_per_game and Assists_per_game are highly significant and positively correlated with salary. 
+
+#### Random effect vs Fixed effect -  Hausman test 
+
+```{r fe-vs-re_panel_balanced, echo=TRUE}
+# conduct the Hausman test on RE vs. FE with function `phtest` in `plm`
+phtest(fe,re)
+```
+
+Here the  p value ≤ .05  which means its  “significant”,  indicating that the fixed effect model is the best fit even for balanced panel dataset.  
+
+#### Explanation for Question 4
+
+We have answered the below question on the basis of unbalanced panel dataset analysis. 
+
+
+What predicts the players' salaries in the past 10 seasons? (10 points)
+
+a. Which time-varying variables matter to explain player's salary?
+
+The following is a list of time-varying variables that matter to explain  a player's salary. In the Fixed effects model for salary prediction, Points_per_game, Total_Rebounds_per_game, and Assists_per_game are all highly significant, with positive coefficient estimates of 693817.4,546295.7, and  825533.6, respectively. We can also see that Personal_Fouls_per_game is highly significant and has a negative impact on a player's salary, indicating that players who violate the basketball game rule  are being negatively impacted in terms of salary. Steals_per_game have a negative indicator, which means that while it is an asset to be able to steal the ball from the opponent, it may not be reflected in the player's salary at the end of the game. In the NBA, it's possible that players who steal the ball a lot more are undervalued.
+
+Points_per_game           693817.4    54982.0 12.6190 < 2.2e-16 ***
+
+Games                      16224.7     6420.6  2.5270 0.0115418 *  
+
+Mins_Played_per_game      -85495.9    32731.5 -2.6120 0.0090324 ** 
+
+X2_Point_FG               -10600.6     1639.3 -6.4664 1.118e-10 ***
+
+Total_Rebounds_per_game   546295.7    89644.8  6.0940 1.200e-09 ***
+
+Assists_per_game          825533.6   118355.6  6.9750 3.537e-12 ***
+
+Steals_per_game         -1508320.0   371617.0 -4.0588 5.022e-05 ***
+
+Personal_Fouls_per_game -1154993.5   216650.1 -5.3311 1.027e-07 ***
+
+
+
+b. Which are time-invariant predictors in your data set? Do you worry about any fixed effect $\alpha_i$ that might correlated with your predictors? If yes, provide examples of such fixed effects.
+
+"Fixed Effect” $\alpha_i$ are time-invariant unobservables.
+Height, weight, and experience (since our dataset includes overall experience) are time-invariant predictors. Age has also been considered as time-invariant variable as it is eliminated by fixed effect model. 
+Each player might has unobserved heterogeneity $\alpha_i$ , i.e. traits, characteristics that persistently affects ${X}_{it}$ for all t. They are unobserved to us and relatively constant during window of data collection. Such unobserved individual heterogeneity, if unaddressed, will bias the regression result, i.e. biased and inconsistent estimation.
+I feel that some natural talent of the individual player, as well as experience, may be correlated to other predictors (Experience is captured as time invariant variable in our dataset). We may successfully solve the potential endogeneity issue from the time-invariant fixed effect by using "fixed-effect" models with panel data. There is, however, a chance that predictors are linked to "idiosyncratic" inaccuracy. Such endogeneity issue and its bias is persistent ,and unfortunately, prevailing in many practical cases.
+
+ 
+c. Which model of panel analysis do you choose, "fixed-effect" or random effect models
+and why?
+
+To select the optimal model for our panel study, we used the Hausman test. The null and alternate hypothesis of the Hausman test are listed below -
+Null hypothesis - Random effects is preferred model. 
+Alternate hypothesis - Fixed effect is preferred model. 
+The test yielded a highly significant p-value, indicating that the fixed effect model is the best fit for this panel dataset.  
+
+d. Based on your results, what do you recommend to the team owner? How much should
+team pay existing players?
+
+Based on the findings, we can conclude that players who score more points per game, have good rebounds, and are involved in many assists get paid more. In all of the panel tests we've done so far, these variables have consistently been significant.
+When determining how much a team should pay existing players, several aspects must be considered. They may assess a player's overall abilities and the worth he brings to the team's overall success. The answers will vary depending on the overall statistics of the squad and the player in question.
+
+
+
