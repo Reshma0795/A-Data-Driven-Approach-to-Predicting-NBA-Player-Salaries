@@ -1,23 +1,5 @@
 ---
-title: "Guided Team Project"
-author:
-  - Aniket Udaykumar
-  - Niranjana Anand Unnithan
-  - Reshma Vijay Jawale
-  - Varsha Singh
-  - Vidhu Verma
-date: 'March 7th, 2022'
-output:
-  html_document:
-    df_print: paged
-  pdf_document: 
-    df_print: kable
-    highlight: tango
-    fig_height: 4
-    fig_caption: yes
-    latex_engine: lualatex
-subtitle: IS5126 Hands-on with Applied Analytics - Team 17
-linkcolor: MidnightBlue
+
 header-includes: \usepackage{xcolor}
 ---
 
