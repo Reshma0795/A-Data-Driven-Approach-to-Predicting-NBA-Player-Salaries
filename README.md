@@ -1,5 +1,5 @@
 # Introduction
-The National Basketball Association (NBA) is one of the most famous sports franchises in the world. The league has been grown As of today, this professional basketball league is composed of 30 teams in North America, with more than 500 players playing each year. As of 2020, NBA players are the world’s best paid athletes by average annual salary per player.
+The National Basketball Association (NBA) is one of the most famous sports franchises in the world. As of today, this professional basketball league is composed of 30 teams in North America, with more than 500 players playing each year. As of 2020, NBA players are the world’s best paid athletes by average annual salary per player.
 
 # Objective
 This project will explore how to use each NBA player’s performance to determine the player’s annual salary.
