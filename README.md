@@ -1,5 +1,9 @@
 # Introduction
-The National Basketball Association (NBA) is one of the most famous sports franchises in the world. As of today, this professional basketball league is composed of 30 teams in North America, with more than 500 players playing each year. As of 2020, NBA players are the world’s best paid athletes by average annual salary per player.
+The National Basketball Association (NBA) is one of the most famous sports franchises in the world. As of today, this professional basketball league is composed of 30 teams in North America, with more than 500 players playing each year. As of 2020, NBA players are the world’s best paid athletes by average annual salary per player. This project presents a data-driven approach to predicting the salaries of NBA players based on various factors, such as their performance statistics, team dynamics, and market trends. We collected a comprehensive dataset of NBA players and their salaries from the past several seasons, along with their corresponding performance metrics and other relevant features. We then used machine learning techniques to train and evaluate several models to predict player salaries.
+
+The analysis and modeling pipeline are presented in a Jupyter notebook, along with code snippets and visualizations to illustrate the process and results. 
+
+This project can be useful for NBA teams, agents, and fans who are interested in understanding and predicting the salaries of players, as well as for data scientists and machine learning enthusiasts who are interested in applying their skills to a real-world problem.
 
 # Objective
 This project will explore how to use each NBA player’s performance to determine the player’s annual salary.
