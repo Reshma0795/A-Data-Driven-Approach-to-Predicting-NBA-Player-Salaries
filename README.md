@@ -19,3 +19,20 @@ In this second part, I load the data in Python and describe and explore the data
 
 ## Part C : Data Analytics
 In this section, I perform data analytics techniques on the prepared data set, and justify and interpret the model.
+
+## Results
+From the analysis conducted, I have identified the factors that are important to the player salary. 
+
+These are 
+1) Mins_Played_per_game
+2) TRPG = Total_Rebounds_per_game
+3) APG = Assists_per_game
+4) SPG=Steals_per_game
+5) BPG = Blocks_per_game
+6) TPG = Turnovers_per_game
+7) PFPG = Personal_Fouls_per_game
+8) PPG = Points_per_game
+9) EXP=Experience
+10) PER=Player Efficiency Rating
+
+Higher salary is an indication of better performance. Hence, we get a consolidated wisdom about the performance of the players which helps to decide on the acquisition or retention of the players in the team and thus contributing to the overall revenue of the team.
