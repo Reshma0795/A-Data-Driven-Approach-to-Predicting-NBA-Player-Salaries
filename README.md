@@ -3,8 +3,6 @@ The National Basketball Association (NBA) is one of the most famous sports franc
 
 I collected a comprehensive dataset of NBA players and their salaries from the past several seasons, along with their corresponding performance metrics and other relevant features. I then used machine learning techniques to train and evaluate several models to predict player salaries.
 
-The analysis and modeling pipeline are presented in a Jupyter notebook, along with code snippets and visualizations to illustrate the process and results. 
-
 This project can be useful for NBA teams, agents, and fans who are interested in understanding and predicting the salaries of players, as well as for data scientists and machine learning enthusiasts who are interested in applying their skills to a real-world problem.
 
 # Objective
